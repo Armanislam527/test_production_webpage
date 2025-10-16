@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, User, ShoppingBag, Menu, X } from 'lucide-react';
+import { Search, User, Menu, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import AuthModal from './AuthModal';
 import ProfileEdit from './ProfileEdit';
@@ -24,8 +24,10 @@ export default function Header({ onSearch, onCategoryChange }: HeaderProps) {
   const categories = [
     { name: 'All', slug: '' },
     { name: 'Smartphones', slug: 'smartphones' },
+    { name: 'Laptops', slug: 'laptops' },
     { name: 'Bikes', slug: 'bikes' },
     { name: 'Vehicles', slug: 'vehicles' },
+    { name: 'PC Accessories', slug: 'pc-accessories' },
     { name: 'Accessories', slug: 'electric-accessories' },
   ];
 

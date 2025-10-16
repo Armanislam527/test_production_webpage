@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { X, Star, MessageSquare, Store, Calendar, DollarSign, Package } from 'lucide-react';
+import { X, Star, Store, Calendar, DollarSign } from 'lucide-react';
 import { Product, supabase, Review, ShopProduct, Shop } from '../lib/supabase';
+import { optimizeImage } from '../lib/image';
 import { useAuth } from '../contexts/AuthContext';
 import ReviewForm from './ReviewForm';
 import ReviewList from './ReviewList';
@@ -49,7 +50,7 @@ export default function ProductDetail({ product, onClose }: ProductDetailProps) 
   };
 
   const mainImage = Array.isArray(product.images) && product.images.length > 0
-    ? product.images[0]
+    ? optimizeImage(product.images[0], 800)
     : 'https://images.pexels.com/photos/788946/pexels-photo-788946.jpeg?auto=compress&cs=tinysrgb&w=800';
 
   const averageRating = reviews.length > 0
@@ -71,6 +72,7 @@ export default function ProductDetail({ product, onClose }: ProductDetailProps) 
             <img
               src={mainImage}
               alt={product.name}
+              loading="lazy"
               className="w-full h-96 object-cover rounded-lg"
             />
             {Array.isArray(product.images) && product.images.length > 1 && (
@@ -80,6 +82,7 @@ export default function ProductDetail({ product, onClose }: ProductDetailProps) 
                     key={idx}
                     src={img}
                     alt={`${product.name} ${idx + 2}`}
+                    loading="lazy"
                     className="w-full h-20 object-cover rounded-lg cursor-pointer hover:opacity-75"
                   />
                 ))}

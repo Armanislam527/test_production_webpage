@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Sitemap: https://techspecdev.vercel.app/sitemap.xml
+
+

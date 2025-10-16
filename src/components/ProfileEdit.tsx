@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, User, Upload } from 'lucide-react';
+import { X, User } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 type ProfileEditProps = {

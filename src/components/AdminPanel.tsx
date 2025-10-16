@@ -11,7 +11,7 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [shops, setShops] = useState<Shop[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [, setLoading] = useState(false);
 
   useEffect(() => {
     if (activeTab === 'products') fetchProducts();
@@ -81,33 +81,30 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
         <div className="flex border-b">
           <button
             onClick={() => setActiveTab('products')}
-            className={`flex-1 py-4 px-6 font-medium flex items-center justify-center gap-2 ${
-              activeTab === 'products'
-                ? 'border-b-2 border-blue-600 text-blue-600'
-                : 'text-gray-600'
-            }`}
+            className={`flex-1 py-4 px-6 font-medium flex items-center justify-center gap-2 ${activeTab === 'products'
+              ? 'border-b-2 border-blue-600 text-blue-600'
+              : 'text-gray-600'
+              }`}
           >
             <Package className="w-5 h-5" />
             Products
           </button>
           <button
             onClick={() => setActiveTab('shops')}
-            className={`flex-1 py-4 px-6 font-medium flex items-center justify-center gap-2 ${
-              activeTab === 'shops'
-                ? 'border-b-2 border-blue-600 text-blue-600'
-                : 'text-gray-600'
-            }`}
+            className={`flex-1 py-4 px-6 font-medium flex items-center justify-center gap-2 ${activeTab === 'shops'
+              ? 'border-b-2 border-blue-600 text-blue-600'
+              : 'text-gray-600'
+              }`}
           >
             <Store className="w-5 h-5" />
             Shops
           </button>
           <button
             onClick={() => setActiveTab('reviews')}
-            className={`flex-1 py-4 px-6 font-medium flex items-center justify-center gap-2 ${
-              activeTab === 'reviews'
-                ? 'border-b-2 border-blue-600 text-blue-600'
-                : 'text-gray-600'
-            }`}
+            className={`flex-1 py-4 px-6 font-medium flex items-center justify-center gap-2 ${activeTab === 'reviews'
+              ? 'border-b-2 border-blue-600 text-blue-600'
+              : 'text-gray-600'
+              }`}
           >
             <MessageSquare className="w-5 h-5" />
             Reviews
@@ -133,13 +130,12 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                       <h3 className="font-semibold text-gray-900">{product.name}</h3>
                       <p className="text-sm text-gray-600">{product.brand} - {product.model}</p>
                       <span
-                        className={`inline-block mt-2 px-2 py-1 rounded-full text-xs ${
-                          product.status === 'active'
-                            ? 'bg-green-100 text-green-800'
-                            : product.status === 'upcoming'
+                        className={`inline-block mt-2 px-2 py-1 rounded-full text-xs ${product.status === 'active'
+                          ? 'bg-green-100 text-green-800'
+                          : product.status === 'upcoming'
                             ? 'bg-blue-100 text-blue-800'
                             : 'bg-gray-100 text-gray-800'
-                        }`}
+                          }`}
                       >
                         {product.status}
                       </span>
@@ -160,13 +156,12 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                       <p className="text-sm text-gray-600">{shop.email}</p>
                       <p className="text-sm text-gray-600">{shop.phone}</p>
                       <span
-                        className={`inline-block mt-2 px-2 py-1 rounded-full text-xs ${
-                          shop.status === 'approved'
-                            ? 'bg-green-100 text-green-800'
-                            : shop.status === 'pending'
+                        className={`inline-block mt-2 px-2 py-1 rounded-full text-xs ${shop.status === 'approved'
+                          ? 'bg-green-100 text-green-800'
+                          : shop.status === 'pending'
                             ? 'bg-yellow-100 text-yellow-800'
                             : 'bg-red-100 text-red-800'
-                        }`}
+                          }`}
                       >
                         {shop.status}
                       </span>
@@ -207,13 +202,12 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                       </div>
                       <p className="text-sm text-gray-600 mb-2">{review.content}</p>
                       <span
-                        className={`inline-block px-2 py-1 rounded-full text-xs ${
-                          review.status === 'approved'
-                            ? 'bg-green-100 text-green-800'
-                            : review.status === 'pending'
+                        className={`inline-block px-2 py-1 rounded-full text-xs ${review.status === 'approved'
+                          ? 'bg-green-100 text-green-800'
+                          : review.status === 'pending'
                             ? 'bg-yellow-100 text-yellow-800'
                             : 'bg-red-100 text-red-800'
-                        }`}
+                          }`}
                       >
                         {review.status}
                       </span>

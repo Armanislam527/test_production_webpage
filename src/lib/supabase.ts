@@ -3,11 +3,22 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
+// Do not throw during module initialization on missing env in prod builds.
+// Instead, log a clear error and create a no-op client that will cause RPCs/queries
+// to fail gracefully and be handled by the caller's error handling/UI states.
+let client;
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables');
+  // eslint-disable-next-line no-console
+  console.error(
+    'Supabase environment variables are missing. Please configure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your hosting environment.'
+  );
+  // Create a client with obvious invalid values; network calls will fail but the app will render.
+  client = createClient('https://invalid.supabase.co', 'invalid-anon-key');
+} else {
+  client = createClient(supabaseUrl, supabaseAnonKey);
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = client;
 
 export type Profile = {
   id: string;
@@ -94,21 +105,34 @@ export type PlatformStats = {
   total_users: number;
 };
 
+// Simple in-memory cache for platform stats to avoid frequent RPCs and flashes
+let cachedStats: { value: PlatformStats; at: number } | null = null;
+const CACHE_TTL_MS = 15_000; // 15s
+
 export async function getPlatformStats(): Promise<PlatformStats> {
+  const now = Date.now();
+  if (cachedStats && now - cachedStats.at < CACHE_TTL_MS) {
+    return cachedStats.value;
+  }
+
   const { data, error } = await supabase.rpc('get_platform_stats');
 
-  if (error) {
+  if (error || !data) {
+    // eslint-disable-next-line no-console
     console.error('Error fetching platform stats:', error);
-    return {
+    const fallback = {
       total_visitors: 0,
       total_products: 0,
       total_shops: 0,
       total_reviews: 0,
       total_users: 0,
     };
+    cachedStats = { value: fallback, at: now };
+    return fallback;
   }
 
-  return data;
+  cachedStats = { value: data as PlatformStats, at: now };
+  return data as PlatformStats;
 }
 
 export async function recordVisit(sessionId: string, userId?: string) {

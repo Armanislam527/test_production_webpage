@@ -79,6 +79,7 @@ export default function CompareProducts({ initialProducts, onClose }: ComparePro
                             : 'https://images.pexels.com/photos/788946/pexels-photo-788946.jpeg?auto=compress&cs=tinysrgb&w=400'
                         }
                         alt={product.name}
+                        loading="lazy"
                         className="w-full h-40 object-cover rounded-lg mb-3"
                       />
                       <p className="font-semibold text-gray-900">{product.name}</p>
@@ -164,6 +165,7 @@ export default function CompareProducts({ initialProducts, onClose }: ComparePro
                           : 'https://images.pexels.com/photos/788946/pexels-photo-788946.jpeg?auto=compress&cs=tinysrgb&w=200'
                       }
                       alt={product.name}
+                      loading="lazy"
                       className="w-full h-24 object-cover rounded mb-2"
                     />
                     <p className="font-medium text-sm">{product.name}</p>

@@ -1,4 +1,5 @@
-import { Star, TrendingUp } from 'lucide-react';
+import { TrendingUp } from 'lucide-react';
+import { optimizeImage } from '../lib/image';
 import { Product } from '../lib/supabase';
 
 type ProductCardProps = {
@@ -8,7 +9,7 @@ type ProductCardProps = {
 
 export default function ProductCard({ product, onClick }: ProductCardProps) {
   const mainImage = Array.isArray(product.images) && product.images.length > 0
-    ? product.images[0]
+    ? optimizeImage(product.images[0], 600)
     : 'https://images.pexels.com/photos/788946/pexels-photo-788946.jpeg?auto=compress&cs=tinysrgb&w=400';
 
   const statusColors = {
@@ -26,6 +27,7 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
         <img
           src={mainImage}
           alt={product.name}
+          loading="lazy"
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
         />
         <div className="absolute top-2 right-2">

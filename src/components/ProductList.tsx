@@ -13,10 +13,20 @@ export default function ProductList({ searchQuery, categorySlug }: ProductListPr
   const [products, setProducts] = useState<(Product & { category?: Category })[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [filters, setFilters] = useState({
+    minPrice: '',
+    maxPrice: '',
+    brand: '',
+    status: '', // active, upcoming, discontinued
+    network: '', // 4g, 5g, touch
+    releasedAfter: '', // yyyy-mm-dd
+  });
+
+  const debouncedQuery = useDebounced(searchQuery, 300);
 
   useEffect(() => {
     fetchProducts();
-  }, [searchQuery, categorySlug]);
+  }, [debouncedQuery, categorySlug]);
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -41,9 +51,28 @@ export default function ProductList({ searchQuery, categorySlug }: ProductListPr
         }
       }
 
-      if (searchQuery) {
-        query = query.or(`name.ilike.%${searchQuery}%,brand.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
+      if (debouncedQuery) {
+        const safe = sanitizeLike(debouncedQuery);
+        query = query.or(`name.ilike.%${safe}%,brand.ilike.%${safe}%,description.ilike.%${safe}%`);
       }
+
+      // Numeric filters
+      if (filters.minPrice) query = query.gte('price', Number(filters.minPrice));
+      if (filters.maxPrice) query = query.lte('price', Number(filters.maxPrice));
+
+      // Status filter
+      if (filters.status) query = query.eq('status', filters.status);
+
+      // Brand filter (case-insensitive)
+      if (filters.brand) query = query.ilike('brand', `%${sanitizeLike(filters.brand)}%`);
+
+      // Network/spec filters from specifications jsonb
+      if (filters.network === '5g') query = query.contains('specifications', { '5g': 'Yes' } as any);
+      if (filters.network === '4g') query = query.contains('specifications', { '5g': 'No' } as any);
+      if (filters.network === 'touch') query = query.contains('specifications', { 'display': '' } as any); // presence proxy
+
+      // Release date filter
+      if (filters.releasedAfter) query = query.gte('release_date', filters.releasedAfter);
 
       const { data, error } = await query;
 
@@ -55,6 +84,8 @@ export default function ProductList({ searchQuery, categorySlug }: ProductListPr
       setLoading(false);
     }
   };
+
+  returnUI:
 
   if (loading) {
     return (
@@ -75,6 +106,57 @@ export default function ProductList({ searchQuery, categorySlug }: ProductListPr
 
   return (
     <>
+      <div className="bg-white rounded-lg border p-4 mb-6 grid md:grid-cols-6 gap-3">
+        <input
+          type="number"
+          placeholder="Min Price"
+          value={filters.minPrice}
+          onChange={(e) => setFilters({ ...filters, minPrice: e.target.value })}
+          className="px-3 py-2 border rounded"
+        />
+        <input
+          type="number"
+          placeholder="Max Price"
+          value={filters.maxPrice}
+          onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value })}
+          className="px-3 py-2 border rounded"
+        />
+        <input
+          type="text"
+          placeholder="Brand"
+          value={filters.brand}
+          onChange={(e) => setFilters({ ...filters, brand: e.target.value })}
+          className="px-3 py-2 border rounded"
+        />
+        <select
+          value={filters.status}
+          onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+          className="px-3 py-2 border rounded"
+        >
+          <option value="">Any Status</option>
+          <option value="active">Active</option>
+          <option value="upcoming">Upcoming</option>
+          <option value="discontinued">Discontinued</option>
+        </select>
+        <select
+          value={filters.network}
+          onChange={(e) => setFilters({ ...filters, network: e.target.value })}
+          className="px-3 py-2 border rounded"
+        >
+          <option value="">Any Network</option>
+          <option value="touch">Touch</option>
+          <option value="4g">4G</option>
+          <option value="5g">5G</option>
+        </select>
+        <input
+          type="date"
+          placeholder="Released After"
+          value={filters.releasedAfter}
+          onChange={(e) => setFilters({ ...filters, releasedAfter: e.target.value })}
+          className="px-3 py-2 border rounded"
+        />
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {products.map((product) => (
           <ProductCard
@@ -93,4 +175,18 @@ export default function ProductList({ searchQuery, categorySlug }: ProductListPr
       )}
     </>
   );
+}
+
+function useDebounced<T>(value: T, delayMs: number): T {
+  const [v, setV] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setV(value), delayMs);
+    return () => clearTimeout(t);
+  }, [value, delayMs]);
+  return v;
+}
+
+function sanitizeLike(input: string): string {
+  // Escape % and _ used by ILIKE (ES2020-compatible)
+  return input.split('%').join('\\%').split('_').join('\\_');
 }

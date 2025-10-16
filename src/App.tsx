@@ -1,18 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense, lazy } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Header from './components/Header';
-import ProductList from './components/ProductList';
-import CompareProducts from './components/CompareProducts';
-import ShopRegistration from './components/ShopRegistration';
-import AdminPanel from './components/AdminPanel';
+const ProductList = lazy(() => import('./components/ProductList'));
+const CompareProducts = lazy(() => import('./components/CompareProducts'));
+const ShopRegistration = lazy(() => import('./components/ShopRegistration'));
+const AdminPanel = lazy(() => import('./components/AdminPanel'));
 import { Product, getPlatformStats, PlatformStats, recordVisit } from './lib/supabase';
-import { GitCompare, Store, Shield } from 'lucide-react';
+import { Store, Shield } from 'lucide-react';
 
 function AppContent() {
   const [searchQuery, setSearchQuery] = useState('');
   const [categorySlug, setCategorySlug] = useState('');
   const [showComparison, setShowComparison] = useState(false);
-  const [compareProducts, setCompareProducts] = useState<Product[]>([]);
+  const [compareProducts] = useState<Product[]>([]);
   const [showShopReg, setShowShopReg] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
   const [stats, setStats] = useState<PlatformStats>({
@@ -40,11 +40,6 @@ function AppContent() {
 
     return () => clearInterval(interval);
   }, [user]);
-
-  const handleCompare = (products: Product[]) => {
-    setCompareProducts(products);
-    setShowComparison(true);
-  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -105,25 +100,35 @@ function AppContent() {
           </div>
         </div>
 
-        <ProductList searchQuery={searchQuery} categorySlug={categorySlug} />
+        <Suspense fallback={<div className="py-12 text-center text-gray-500">Loading products…</div>}>
+          <ProductList searchQuery={searchQuery} categorySlug={categorySlug} />
+        </Suspense>
       </main>
 
       {showComparison && compareProducts.length > 0 && (
-        <CompareProducts
-          initialProducts={compareProducts}
-          onClose={() => setShowComparison(false)}
-        />
+        <Suspense fallback={<div className="fixed inset-0 flex items-center justify-center bg-black/50 text-white">Loading…</div>}>
+          <CompareProducts
+            initialProducts={compareProducts}
+            onClose={() => setShowComparison(false)}
+          />
+        </Suspense>
       )}
 
       {showShopReg && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
           <div className="my-8">
-            <ShopRegistration onSuccess={() => setShowShopReg(false)} onClose={() => setShowShopReg(false)} />
+            <Suspense fallback={<div className="text-white">Loading…</div>}>
+              <ShopRegistration onSuccess={() => setShowShopReg(false)} onClose={() => setShowShopReg(false)} />
+            </Suspense>
           </div>
         </div>
       )}
 
-      {showAdmin && <AdminPanel onClose={() => setShowAdmin(false)} />}
+      {showAdmin && (
+        <Suspense fallback={<div className="fixed inset-0 flex items-center justify-center bg-black/50 text-white">Loading…</div>}>
+          <AdminPanel onClose={() => setShowAdmin(false)} />
+        </Suspense>
+      )}
 
       <footer className="bg-white border-t mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

@@ -29,8 +29,9 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }: A
 
     try {
       if (mode === 'forgot') {
+        const siteUrl = import.meta.env.VITE_SITE_URL || window.location.origin;
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: window.location.origin + '/reset-password',
+          redirectTo: `${siteUrl}/reset-password`,
         });
         if (error) throw error;
         setSuccess('Password reset email sent! Check your inbox.');

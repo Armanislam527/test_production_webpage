@@ -146,3 +146,40 @@ export async function recordVisit(sessionId: string, userId?: string) {
     console.error('Error recording visit:', error);
   }
 }
+
+export async function voteReview(reviewId: string, isHelpful: boolean) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Must be logged in to vote');
+
+  const { error } = await supabase
+    .from('review_votes')
+    .upsert({
+      review_id: reviewId,
+      user_id: user.id,
+      is_helpful: isHelpful,
+    });
+
+  if (error) throw error;
+
+  // Update the helpful count
+  const { error: updateError } = await supabase.rpc('update_review_helpful_count', {
+    review_id: reviewId,
+  });
+
+  if (updateError) throw updateError;
+}
+
+export async function getUserVote(reviewId: string) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data, error } = await supabase
+    .from('review_votes')
+    .select('is_helpful')
+    .eq('review_id', reviewId)
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data?.is_helpful || null;
+}

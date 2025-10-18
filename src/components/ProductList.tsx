@@ -26,7 +26,7 @@ export default function ProductList({ searchQuery, categorySlug }: ProductListPr
 
   useEffect(() => {
     fetchProducts();
-  }, [debouncedQuery, categorySlug]);
+  }, [debouncedQuery, categorySlug, filters]);
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -104,57 +104,79 @@ export default function ProductList({ searchQuery, categorySlug }: ProductListPr
     );
   }
 
+  const clearFilters = () => {
+    setFilters({
+      minPrice: '',
+      maxPrice: '',
+      brand: '',
+      status: '',
+      network: '',
+      releasedAfter: '',
+    });
+  };
+
   return (
     <>
-      <div className="bg-white rounded-lg border p-4 mb-6 grid md:grid-cols-6 gap-3">
-        <input
-          type="number"
-          placeholder="Min Price"
-          value={filters.minPrice}
-          onChange={(e) => setFilters({ ...filters, minPrice: e.target.value })}
-          className="px-3 py-2 border rounded"
-        />
-        <input
-          type="number"
-          placeholder="Max Price"
-          value={filters.maxPrice}
-          onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value })}
-          className="px-3 py-2 border rounded"
-        />
-        <input
-          type="text"
-          placeholder="Brand"
-          value={filters.brand}
-          onChange={(e) => setFilters({ ...filters, brand: e.target.value })}
-          className="px-3 py-2 border rounded"
-        />
-        <select
-          value={filters.status}
-          onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-          className="px-3 py-2 border rounded"
-        >
-          <option value="">Any Status</option>
-          <option value="active">Active</option>
-          <option value="upcoming">Upcoming</option>
-          <option value="discontinued">Discontinued</option>
-        </select>
-        <select
-          value={filters.network}
-          onChange={(e) => setFilters({ ...filters, network: e.target.value })}
-          className="px-3 py-2 border rounded"
-        >
-          <option value="">Any Network</option>
-          <option value="touch">Touch</option>
-          <option value="4g">4G</option>
-          <option value="5g">5G</option>
-        </select>
-        <input
-          type="date"
-          placeholder="Released After"
-          value={filters.releasedAfter}
-          onChange={(e) => setFilters({ ...filters, releasedAfter: e.target.value })}
-          className="px-3 py-2 border rounded"
-        />
+      <div className="bg-white rounded-lg border p-4 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">Filters</h3>
+          <button
+            onClick={clearFilters}
+            className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+          >
+            Clear All Filters
+          </button>
+        </div>
+        <div className="grid md:grid-cols-6 gap-3">
+          <input
+            type="number"
+            placeholder="Min Price"
+            value={filters.minPrice}
+            onChange={(e) => setFilters({ ...filters, minPrice: e.target.value })}
+            className="px-3 py-2 border rounded"
+          />
+          <input
+            type="number"
+            placeholder="Max Price"
+            value={filters.maxPrice}
+            onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value })}
+            className="px-3 py-2 border rounded"
+          />
+          <input
+            type="text"
+            placeholder="Brand"
+            value={filters.brand}
+            onChange={(e) => setFilters({ ...filters, brand: e.target.value })}
+            className="px-3 py-2 border rounded"
+          />
+          <select
+            value={filters.status}
+            onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+            className="px-3 py-2 border rounded"
+          >
+            <option value="">Any Status</option>
+            <option value="active">Active</option>
+            <option value="upcoming">Upcoming</option>
+            <option value="discontinued">Discontinued</option>
+          </select>
+          <select
+            value={filters.network}
+            onChange={(e) => setFilters({ ...filters, network: e.target.value })}
+            className="px-3 py-2 border rounded"
+          >
+            <option value="">Any Network</option>
+            <option value="touch">Touch</option>
+            <option value="4g">4G</option>
+            <option value="5g">5G</option>
+          </select>
+          <input
+            type="date"
+            placeholder="Released After"
+            value={filters.releasedAfter}
+            onChange={(e) => setFilters({ ...filters, releasedAfter: e.target.value })}
+            className="px-3 py-2 border rounded"
+          />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

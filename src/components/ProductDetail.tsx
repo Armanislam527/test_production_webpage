@@ -214,7 +214,7 @@ export default function ProductDetail({ product, onClose }: ProductDetailProps) 
                   )}
                 </div>
               )}
-              <ReviewList reviews={reviews} />
+              <ReviewList reviews={reviews} onReviewUpdate={fetchReviews} />
             </div>
           )}
 

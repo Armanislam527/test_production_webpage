@@ -1,11 +1,54 @@
 import { Star, ThumbsUp } from 'lucide-react';
-import { Review } from '../lib/supabase';
+import { useState, useEffect } from 'react';
+import { Review, voteReview, getUserVote } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
 
 type ReviewListProps = {
   reviews: Review[];
+  onReviewUpdate?: () => void;
 };
 
-export default function ReviewList({ reviews }: ReviewListProps) {
+export default function ReviewList({ reviews, onReviewUpdate }: ReviewListProps) {
+  const { user } = useAuth();
+  const [userVotes, setUserVotes] = useState<Record<string, boolean | null>>({});
+  const [loading, setLoading] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    if (user) {
+      // Load user votes for all reviews
+      const loadVotes = async () => {
+        const votes: Record<string, boolean | null> = {};
+        for (const review of reviews) {
+          try {
+            const vote = await getUserVote(review.id);
+            votes[review.id] = vote;
+          } catch (error) {
+            console.error('Error loading vote for review:', review.id, error);
+            votes[review.id] = null;
+          }
+        }
+        setUserVotes(votes);
+      };
+      loadVotes();
+    }
+  }, [user, reviews]);
+
+  const handleVote = async (reviewId: string, isHelpful: boolean) => {
+    if (!user) return;
+
+    setLoading(prev => ({ ...prev, [reviewId]: true }));
+    
+    try {
+      await voteReview(reviewId, isHelpful);
+      setUserVotes(prev => ({ ...prev, [reviewId]: isHelpful }));
+      onReviewUpdate?.(); // Refresh reviews to get updated helpful count
+    } catch (error) {
+      console.error('Error voting on review:', error);
+    } finally {
+      setLoading(prev => ({ ...prev, [reviewId]: false }));
+    }
+  };
+
   if (reviews.length === 0) {
     return (
       <div className="text-center py-8 text-gray-500">
@@ -47,7 +90,16 @@ export default function ReviewList({ reviews }: ReviewListProps) {
           <p className="text-gray-700 mb-3">{review.content}</p>
 
           <div className="flex items-center gap-4 text-sm">
-            <button className="flex items-center gap-1 text-gray-600 hover:text-blue-600">
+            <button 
+              className={`flex items-center gap-1 transition-colors ${
+                userVotes[review.id] === true 
+                  ? 'text-blue-600' 
+                  : 'text-gray-600 hover:text-blue-600'
+              } ${loading[review.id] ? 'opacity-50 cursor-not-allowed' : ''}`}
+              onClick={() => handleVote(review.id, true)}
+              disabled={loading[review.id] || !user}
+              title={!user ? 'Sign in to vote' : ''}
+            >
               <ThumbsUp className="w-4 h-4" />
               <span>Helpful ({review.helpful_count})</span>
             </button>

@@ -35,9 +35,20 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
 
 function Router() {
   const path = window.location.pathname;
+  
+  // Handle reset password route
   if (path.startsWith('/reset-password')) {
     return <ResetPassword />;
   }
+  
+  // Handle hash-based routing for modals
+  const hash = window.location.hash;
+  if (hash === '#signin' || hash === '#signup') {
+    // The App component will handle showing the auth modal based on hash
+    return <App />;
+  }
+  
+  // Default to main app
   return <App />;
 }
 

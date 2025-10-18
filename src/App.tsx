@@ -1,6 +1,7 @@
 import { useState, useEffect, Suspense, lazy } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Header from './components/Header';
+import AuthModal from './components/AuthModal';
 const ProductList = lazy(() => import('./components/ProductList'));
 const CompareProducts = lazy(() => import('./components/CompareProducts'));
 const ShopRegistration = lazy(() => import('./components/ShopRegistration'));
@@ -15,6 +16,7 @@ function AppContent() {
   const [compareProducts] = useState<Product[]>([]);
   const [showShopReg, setShowShopReg] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const [stats, setStats] = useState<PlatformStats>({
     total_visitors: 0,
     total_products: 0,
@@ -40,6 +42,25 @@ function AppContent() {
 
     return () => clearInterval(interval);
   }, [user]);
+
+  // Handle hash-based routing for auth modal
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash;
+      if (hash === '#signin' || hash === '#signup') {
+        setShowAuthModal(true);
+      } else {
+        setShowAuthModal(false);
+      }
+    };
+
+    // Check initial hash
+    handleHashChange();
+
+    // Listen for hash changes
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -127,6 +148,18 @@ function AppContent() {
       {showAdmin && (
         <Suspense fallback={<div className="fixed inset-0 flex items-center justify-center bg-black/50 text-white">Loading…</div>}>
           <AdminPanel onClose={() => setShowAdmin(false)} />
+        </Suspense>
+      )}
+
+      {showAuthModal && (
+        <Suspense fallback={<div className="fixed inset-0 flex items-center justify-center bg-black/50 text-white">Loading…</div>}>
+          <AuthModal 
+            isOpen={showAuthModal} 
+            onClose={() => {
+              setShowAuthModal(false);
+              window.location.hash = '';
+            }} 
+          />
         </Suspense>
       )}
 

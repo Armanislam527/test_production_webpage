@@ -153,11 +153,15 @@ export async function voteReview(reviewId: string, isHelpful: boolean) {
 
   const { error } = await supabase
     .from('review_votes')
-    .upsert({
-      review_id: reviewId,
-      user_id: user.id,
-      is_helpful: isHelpful,
-    });
+    // Ensure we upsert by the unique (review_id, user_id) pair so votes update instead of creating duplicates
+    .upsert(
+      {
+        review_id: reviewId,
+        user_id: user.id,
+        is_helpful: isHelpful,
+      },
+      { onConflict: 'review_id,user_id' }
+    );
 
   if (error) throw error;
 
@@ -181,5 +185,6 @@ export async function getUserVote(reviewId: string) {
     .maybeSingle();
 
   if (error) throw error;
-  return data?.is_helpful || null;
+  // Return the boolean value exactly; if it's false we must return false (not null)
+  return data?.is_helpful ?? null;
 }

@@ -67,9 +67,30 @@ export default function ProductList({ searchQuery, categorySlug }: ProductListPr
       if (filters.brand) query = query.ilike('brand', `%${sanitizeLike(filters.brand)}%`);
 
       // Network/spec filters from specifications jsonb
-      if (filters.network === '5g') query = query.contains('specifications', { '5g': 'Yes' } as any);
-      if (filters.network === '4g') query = query.contains('specifications', { '5g': 'No' } as any);
-      if (filters.network === 'touch') query = query.contains('specifications', { 'display': '' } as any); // presence proxy
+      // Use JSON path accessors where possible so we match common shapes like
+      // { "network": "4G" } or { "network": "5G" } or specs mentioning "touch".
+      try {
+        if (filters.network === '5g') {
+          // Look for a network property containing '5g' (case-insensitive)
+          query = query.filter("specifications->>network", "ilike", "%5g%");
+        }
+
+        if (filters.network === '4g') {
+          query = query.filter("specifications->>network", "ilike", "%4g%");
+        }
+
+        if (filters.network === 'touch') {
+          // As a best-effort fallback, search the JSON text for the word 'touch'
+          // which covers displays/specs that mention touch capability.
+          query = query.filter("specifications::text", "ilike", "%touch%");
+        }
+      } catch (e) {
+        // Some PostgREST/Supabase setups may not accept complex filter names; fall back
+        // to the previous approach (json contains) as a safety net.
+        if (filters.network === '5g') query = query.contains('specifications', { '5g': 'Yes' } as any);
+        if (filters.network === '4g') query = query.contains('specifications', { '4g': 'Yes' } as any);
+        if (filters.network === 'touch') query = query.contains('specifications', { 'display': '' } as any);
+      }
 
       // Release date filter
       if (filters.releasedAfter) query = query.gte('release_date', filters.releasedAfter);
@@ -84,8 +105,6 @@ export default function ProductList({ searchQuery, categorySlug }: ProductListPr
       setLoading(false);
     }
   };
-
-  returnUI:
 
   if (loading) {
     return (

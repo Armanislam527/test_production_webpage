@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from './lib/supabase';
 import { CheckCircle, AlertCircle, Loader, ArrowLeft } from 'lucide-react';
 
@@ -10,8 +9,8 @@ export default function ResetPassword() {
   const [error, setError] = useState('');
   const [stage, setStage] = useState<'checking' | 'ready' | 'done' | 'error'>('checking');
   const [loading, setLoading] = useState(false);
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
+  // Use native URL APIs instead of react-router so the app doesn't depend on react-router-dom
+  const searchParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
 
   useEffect(() => {
     const handlePasswordReset = async () => {
@@ -77,9 +76,11 @@ export default function ResetPassword() {
       setMessage('Password updated successfully! You will be redirected to the login page in 5 seconds...');
       setStage('done');
 
-      // Redirect to login after 5 seconds
+      // Redirect to login after 5 seconds by setting the hash so the Auth modal opens
       setTimeout(() => {
-        navigate('/#signin');
+        window.location.hash = '#signin';
+        // Also navigate to the home page root to ensure modality is handled
+        if (window.location.pathname !== '/') window.location.pathname = '/';
       }, 5000);
 
     } catch (error: any) {
@@ -112,7 +113,10 @@ export default function ResetPassword() {
           </div>
           <div className="mt-6">
             <button
-              onClick={() => navigate('/#forgot-password')}
+              onClick={() => {
+                window.location.hash = '#forgot-password';
+                if (window.location.pathname !== '/') window.location.pathname = '/';
+              }}
               className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
               Back to Forgot Password
@@ -134,7 +138,10 @@ export default function ResetPassword() {
           </div>
           <div className="mt-6">
             <button
-              onClick={() => navigate('/#signin')}
+              onClick={() => {
+                window.location.hash = '#signin';
+                if (window.location.pathname !== '/') window.location.pathname = '/';
+              }}
               className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
               Back to Sign In
@@ -150,7 +157,7 @@ export default function ResetPassword() {
       <div className="max-w-md w-full space-y-6">
         <div>
           <button
-            onClick={() => navigate(-1)}
+            onClick={() => window.history.back()}
             className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
           >
             <ArrowLeft className="w-4 h-4 mr-1" /> Back
@@ -238,7 +245,7 @@ export default function ResetPassword() {
 
         <div className="mt-6 text-center">
           <button
-            onClick={() => navigate('/')}
+            onClick={() => (window.location.href = '/')}
             className="text-sm text-gray-600 hover:text-blue-600 transition-colors"
           >
             ← Back to Homepage

@@ -20,7 +20,9 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
     "format": "prettier --write .",
-    "prepare": "husky"
+    "prepare": "husky",
+    "generate-sitemap": "ts-node scripts/generate-sitemap.ts",
+    "postbuild": "npm run generate-sitemap"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,css,md,json}": [
@@ -34,6 +36,7 @@
     "lucide-react": "^0.344.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-helmet-async": "^2.0.5",
     "react-router-dom": "^7.9.4"
   },
   "devDependencies": {

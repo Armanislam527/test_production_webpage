@@ -153,12 +153,12 @@ function AppContent() {
 
       {showAuthModal && (
         <Suspense fallback={<div className="fixed inset-0 flex items-center justify-center bg-black/50 text-white">Loading…</div>}>
-          <AuthModal 
-            isOpen={showAuthModal} 
+          <AuthModal
+            isOpen={showAuthModal}
             onClose={() => {
               setShowAuthModal(false);
               window.location.hash = '';
-            }} 
+            }}
           />
         </Suspense>
       )}

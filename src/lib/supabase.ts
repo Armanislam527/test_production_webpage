@@ -3,24 +3,39 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Do not throw during module initialization on missing env in prod builds.
-// Instead, log a clear error and create a no-op client that will cause RPCs/queries
-// to fail gracefully and be handled by the caller's error handling/UI states.
-let client;
 if (!supabaseUrl || !supabaseAnonKey) {
-  // eslint-disable-next-line no-console
-  console.error(
-    'Supabase environment variables are missing. Please configure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your hosting environment.'
-  );
-  // Create a client with obvious invalid values; network calls will fail but the app will render.
-  client = createClient('https://invalid.supabase.co', 'invalid-anon-key');
-} else {
-  client = createClient(supabaseUrl, supabaseAnonKey);
+  throw new Error('Missing Supabase environment variables');
 }
 
-export const supabase = client;
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true
+  }
+});
 
-export type Profile = {
+// Realtime subscriptions
+export const subscribeToVisitors = (callback: (count: number) => void) => {
+  return supabase
+    .channel('visitor_count')
+    .on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'visitor_analytics' },
+      (payload) => {
+        supabase
+          .from('visitor_analytics')
+          .select('*', { count: 'exact', head: true })
+          .then(({ count }) => {
+            if (count !== null) callback(count);
+          });
+      }
+    )
+    .subscribe();
+};
+
+// Database Types
+export interface Profile {
   id: string;
   email: string;
   full_name: string | null;
@@ -29,162 +44,239 @@ export type Profile = {
   role: 'user' | 'shop_owner' | 'admin';
   created_at: string;
   updated_at: string;
-};
+}
 
-export type Category = {
+export interface Category {
   id: string;
   name: string;
   slug: string;
   description: string | null;
   icon: string | null;
   created_at: string;
-};
+}
 
-export type Product = {
+export interface Product {
   id: string;
-  category_id: string;
   name: string;
   slug: string;
-  brand: string;
-  model: string;
-  description: string | null;
-  specifications: Record<string, any>;
+  description: string;
+  price: number;
   images: string[];
+  brand: string;
+  category_id: string;
+  model: string | null;
+  rating: number | null;
+  specifications: Record<string, any> | null;
   release_date: string | null;
-  price: number | null;
-  status: 'active' | 'discontinued' | 'upcoming';
   created_at: string;
   updated_at: string;
-};
+}
 
-export type Shop = {
-  id: string;
-  owner_id: string;
-  name: string;
-  slug: string;
-  description: string | null;
-  logo_url: string | null;
-  address: string | null;
-  phone: string | null;
-  email: string | null;
-  website: string | null;
-  status: 'pending' | 'approved' | 'rejected' | 'suspended';
-  created_at: string;
-  updated_at: string;
-};
-
-export type Review = {
+export interface Review {
   id: string;
   product_id: string;
   user_id: string;
   rating: number;
-  title: string;
-  content: string;
-  helpful_count: number;
-  status: 'pending' | 'approved' | 'rejected';
+  comment: string;
+  is_approved: boolean;
   created_at: string;
   updated_at: string;
-};
+  user: {
+    id: string;
+    email: string;
+    user_metadata: {
+      full_name: string;
+      avatar_url?: string;
+    };
+  };
+}
 
-export type ShopProduct = {
+export interface Shop {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  logo_url: string | null;
+  banner_url: string | null;
+  address: string | null;
+  phone: string | null;
+  email: string | null;
+  website: string | null;
+  is_verified: boolean;
+  owner_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ShopProduct {
   id: string;
   shop_id: string;
   product_id: string;
   price: number;
   stock_status: 'in_stock' | 'out_of_stock' | 'pre_order';
   stock_quantity: number | null;
-  last_updated: string;
+  sku: string | null;
+  is_active: boolean;
   created_at: string;
-};
-
-export type PlatformStats = {
-  total_visitors: number;
-  total_products: number;
-  total_shops: number;
-  total_reviews: number;
-  total_users: number;
-};
-
-// Simple in-memory cache for platform stats to avoid frequent RPCs and flashes
-let cachedStats: { value: PlatformStats; at: number } | null = null;
-const CACHE_TTL_MS = 15_000; // 15s
-
-export async function getPlatformStats(): Promise<PlatformStats> {
-  const now = Date.now();
-  if (cachedStats && now - cachedStats.at < CACHE_TTL_MS) {
-    return cachedStats.value;
-  }
-
-  const { data, error } = await supabase.rpc('get_platform_stats');
-
-  if (error || !data) {
-    // eslint-disable-next-line no-console
-    console.error('Error fetching platform stats:', error);
-    const fallback = {
-      total_visitors: 0,
-      total_products: 0,
-      total_shops: 0,
-      total_reviews: 0,
-      total_users: 0,
-    };
-    cachedStats = { value: fallback, at: now };
-    return fallback;
-  }
-
-  cachedStats = { value: data as PlatformStats, at: now };
-  return data as PlatformStats;
+  updated_at: string;
+  shop?: Shop;
 }
 
-export async function recordVisit(sessionId: string, userId?: string) {
-  try {
-    await supabase.rpc('record_visit', {
-      p_session_id: sessionId,
-      p_user_agent: navigator.userAgent,
-      p_user_id: userId || null,
-    });
-  } catch (error) {
-    console.error('Error recording visit:', error);
-  }
-}
+// Helper functions
+export const uploadImage = async (file: File, path: string) => {
+  const fileExt = file.name.split('.').pop();
+  const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+  const filePath = `${path}/${fileName}`;
 
-export async function voteReview(reviewId: string, isHelpful: boolean) {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Must be logged in to vote');
+  const { error: uploadError } = await supabase.storage
+    .from('product-images')
+    .upload(filePath, file);
+
+  if (uploadError) throw uploadError;
+
+  const { data: { publicUrl } } = supabase
+    .storage
+    .from('product-images')
+    .getPublicUrl(filePath);
+
+  return publicUrl;
+};
+
+export const deleteImage = async (url: string) => {
+  const path = url.split('/').pop();
+  if (!path) return;
 
   const { error } = await supabase
-    .from('review_votes')
-    // Ensure we upsert by the unique (review_id, user_id) pair so votes update instead of creating duplicates
-    .upsert(
-      {
-        review_id: reviewId,
-        user_id: user.id,
-        is_helpful: isHelpful,
-      },
-      { onConflict: 'review_id,user_id' }
-    );
+    .storage
+    .from('product-images')
+    .remove([path]);
 
   if (error) throw error;
+};
 
-  // Update the helpful count
-  const { error: updateError } = await supabase.rpc('update_review_helpful_count', {
-    review_id: reviewId,
+// Auth functions
+export const signInWithEmail = async (email: string, password: string) => {
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+  if (error) throw error;
+  return data;
+};
+
+export const signUpWithEmail = async (email: string, password: string, userData: Partial<Profile>) => {
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        full_name: userData.full_name,
+        role: 'user',
+      },
+    },
+  });
+  if (error) throw error;
+  return data;
+};
+
+export const signOut = async () => {
+  const { error } = await supabase.auth.signOut();
+  if (error) throw error;
+};
+
+export const getCurrentUser = async () => {
+  const { data: { user } } = await supabase.auth.getUser();
+  return user;
+};
+
+export const updateUserProfile = async (updates: Partial<Profile>) => {
+  const { data, error } = await supabase
+    .from('profiles')
+    .update(updates)
+    .eq('id', updates.id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+};
+
+// Product functions
+export const fetchProducts = async (filters = {}) => {
+  let query = supabase
+    .from('products')
+    .select('*', { count: 'exact' });
+
+  // Apply filters
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value) {
+      query = query.eq(key, value);
+    }
   });
 
-  if (updateError) throw updateError;
-}
-
-export async function getUserVote(reviewId: string) {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const { data, error } = await supabase
-    .from('review_votes')
-    .select('is_helpful')
-    .eq('review_id', reviewId)
-    .eq('user_id', user.id)
-    .maybeSingle();
-
+  const { data, error, count } = await query;
   if (error) throw error;
-  // Return the boolean value exactly; if it's false we must return false (not null)
-  return data?.is_helpful ?? null;
-}
+  return { data, count };
+};
+
+export const fetchProductBySlug = async (slug: string) => {
+  const { data, error } = await supabase
+    .from('products')
+    .select('*')
+    .eq('slug', slug)
+    .single();
+  if (error) throw error;
+  return data;
+};
+
+// Review functions
+export const fetchProductReviews = async (productId: string) => {
+  const { data, error } = await supabase
+    .from('reviews')
+    .select('*')
+    .eq('product_id', productId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data;
+};
+
+export const createReview = async (review: Omit<Review, 'id' | 'created_at' | 'updated_at' | 'user'>) => {
+  const { data, error } = await supabase
+    .from('reviews')
+    .insert(review)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+};
+
+// Shop functions
+export const fetchShops = async () => {
+  const { data, error } = await supabase
+    .from('shops')
+    .select('*')
+    .order('name');
+  if (error) throw error;
+  return data;
+};
+
+export const fetchShopProducts = async (productId: string) => {
+  const { data, error } = await supabase
+    .from('shop_products')
+    .select('*, shops(*)')
+    .eq('product_id', productId);
+  if (error) throw error;
+  return data;
+};
+
+// Search function
+export const searchProducts = async (query: string) => {
+  const { data, error } = await supabase
+    .from('products')
+    .select('*')
+    .textSearch('name_description', query, {
+      type: 'websearch',
+      config: 'english',
+    });
+  if (error) throw error;
+  return data;
+};

@@ -1,7 +1,7 @@
 import { TrendingUp } from 'lucide-react';
 import { optimizeImage } from '../lib/image';
 import { Product } from '../lib/supabase';
-
+import { Link } from 'react-router-dom';
 type ProductCardProps = {
   product: Product & { category?: { name: string } };
   onClick: () => void;
@@ -18,7 +18,10 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
     discontinued: 'bg-gray-100 text-gray-800',
   };
 
-  return (
+  return (<Link
+    to={`/products/${product.slug}`}
+    className="block hover:opacity-90 transition-opacity">
+
     <div
       onClick={onClick}
       className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer overflow-hidden group"
@@ -69,5 +72,6 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
         </div>
       </div>
     </div>
+  </Link >
   );
 }
